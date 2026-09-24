@@ -1,8 +1,0 @@
-MERCHANT: Random Kiosk
-DATE: 2026-05-01
-CURRENCY: USD
-
-Gum                1.00
-Chips              2.50
-
-TOTAL              3.50
