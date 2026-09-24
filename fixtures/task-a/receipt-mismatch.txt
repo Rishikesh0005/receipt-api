@@ -1,0 +1,12 @@
+Restaurant Deluxe
+789 Dining Road
+Date: 06/20/2024
+
+Item                    Price
+Appetizer Plate         $12.00
+Main Course Steak       $28.00
+Dessert Chocolate       $8.50
+
+Subtotal                $48.50
+Tax (10%)               $4.85
+Total                   $60.00

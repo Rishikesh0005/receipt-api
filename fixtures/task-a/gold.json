@@ -1,0 +1,86 @@
+[
+  {
+    "receipt": "receipt-clean.txt",
+    "expected": {
+      "merchant": "Acme Grocery Store",
+      "date": "2024-12-15",
+      "currency": "USD",
+      "total": 21.55,
+      "taxes": [
+        {
+          "name": "VAT",
+          "rate": 20.0,
+          "amount": 3.59
+        }
+      ],
+      "items": [
+        {
+          "description": "Milk 2L",
+          "amount": 3.99
+        },
+        {
+          "description": "Bread Whole Wheat",
+          "amount": 2.49
+        },
+        {
+          "description": "Cheese Cheddar 1lb",
+          "amount": 5.99
+        },
+        {
+          "description": "Eggs Dozen",
+          "amount": 4.49
+        }
+      ],
+      "itemizeStatus": "COMPLETE"
+    }
+  },
+  {
+    "receipt": "receipt-tax-only.txt",
+    "expected": {
+      "merchant": "TechStore Downtown",
+      "date": "2024-03-08",
+      "currency": "USD",
+      "total": 172.50,
+      "taxes": [
+        {
+          "name": "GST",
+          "rate": 15.0,
+          "amount": 22.50
+        }
+      ],
+      "items": [],
+      "itemizeStatus": "FAILED"
+    }
+  },
+  {
+    "receipt": "receipt-mismatch.txt",
+    "expected": {
+      "merchant": "Restaurant Deluxe",
+      "date": "2024-06-20",
+      "currency": "USD",
+      "total": 60.00,
+      "taxes": [
+        {
+          "name": "Tax",
+          "rate": 10.0,
+          "amount": 4.85
+        }
+      ],
+      "items": [
+        {
+          "description": "Appetizer Plate",
+          "amount": 12.00
+        },
+        {
+          "description": "Main Course Steak",
+          "amount": 28.00
+        },
+        {
+          "description": "Dessert Chocolate",
+          "amount": 8.50
+        }
+      ],
+      "itemizeStatus": "NEEDS_REVIEW"
+    }
+  }
+]

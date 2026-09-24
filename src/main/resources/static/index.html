@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Receipt Processing API · Test Console</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="bg-glow"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">R</div>
+      <div>
+        <h1>Receipt Processing API</h1>
+        <p class="subtitle">Upload &middot; OCR Extract &middot; Reconcile &middot; Itemize</p>
+      </div>
+    </div>
+    <div class="health" id="healthBadge">
+      <span class="dot"></span>
+      <span id="healthText">Checking server&hellip;</span>
+    </div>
+  </header>
+
+  <main class="layout">
+
+    <!-- Left: scenario picker -->
+    <section class="panel scenarios">
+      <h2>1. Choose a receipt</h2>
+      <p class="hint">Pick a fixture scenario or paste your own raw OCR text.</p>
+
+      <div class="scenario-list" id="scenarioList">
+        <!-- injected by app.js -->
+      </div>
+
+      <div class="dropzone" id="dropzone">
+        <input type="file" id="fileInput" hidden />
+        <div class="dropzone-icon">&#8593;</div>
+        <div class="dropzone-text">
+          <strong>Upload a real file</strong>
+          <span>.txt, .pdf, .png, .jpg &mdash; drag &amp; drop or click</span>
+        </div>
+        <div class="dropzone-file" id="dropzoneFile"></div>
+      </div>
+
+      <div class="custom-editor">
+        <div class="editor-head">
+          <span>Custom receipt text</span>
+          <button class="ghost-btn" id="clearCustomBtn" type="button">Clear</button>
+        </div>
+        <textarea id="customText" placeholder="MERCHANT: My Shop&#10;DATE: 2026-01-01&#10;CURRENCY: EUR&#10;&#10;Coffee                3.00&#10;&#10;TOTAL                3.00"></textarea>
+      </div>
+
+      <button class="primary-btn" id="runBtn" type="button">
+        <span class="btn-icon">&#9654;</span>
+        Run full workflow
+      </button>
+      <p class="run-hint">Uploads &rarr; processes &rarr; fetches &rarr; re-itemizes</p>
+    </section>
+
+    <!-- Middle: pipeline + result -->
+    <section class="panel pipeline">
+      <h2>2. Pipeline</h2>
+      <ol class="steps" id="stepList">
+        <li data-step="upload"><span class="step-num">1</span><span class="step-label">Upload receipt</span><span class="step-status">Idle</span></li>
+        <li data-step="process"><span class="step-num">2</span><span class="step-label">Process (OCR + extract)</span><span class="step-status">Idle</span></li>
+        <li data-step="get"><span class="step-num">3</span><span class="step-label">Fetch transaction</span><span class="step-status">Idle</span></li>
+        <li data-step="itemize"><span class="step-num">4</span><span class="step-label">Re-itemize from OCR</span><span class="step-status">Idle</span></li>
+      </ol>
+
+      <div class="result-card" id="resultCard">
+        <div class="result-head">
+          <span>Transaction result</span>
+          <span class="status-pill" id="statusPill">&mdash;</span>
+        </div>
+        <div class="result-grid" id="resultGrid">
+          <div class="empty-state">Run the workflow to see extracted fields here.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right: patch tester + raw json -->
+    <section class="panel patch">
+      <h2>3. Edit line items (PATCH)</h2>
+      <p class="hint">Try to reconcile the total yourself &mdash; or break it on purpose to see the 409 response.</p>
+
+      <div class="items-editor" id="itemsEditor">
+        <div class="empty-state">Process a receipt first to edit its items.</div>
+      </div>
+
+      <button class="ghost-btn small" id="addItemBtn" type="button">+ Add line item</button>
+
+      <button class="primary-btn alt" id="patchBtn" type="button">
+        Apply PATCH /transactions/&#123;id&#125;/items
+      </button>
+
+      <div class="json-view">
+        <div class="json-view-head">
+          <span>Server response</span>
+          <span class="http-code" id="httpCode">&mdash;</span>
+        </div>
+        <pre id="jsonOutput">// Response JSON will appear here</pre>
+      </div>
+    </section>
+  </main>
+
+  <section class="panel curl-panel">
+    <div class="curl-head">
+      <h2 style="margin:0;">cURL command reference</h2>
+      <p class="hint" style="margin:2px 0 0;">Auto-filled with your latest receipt/transaction ids &mdash; test this API from any terminal, just like Postman.</p>
+    </div>
+    <div class="curl-list" id="curlList">
+      <!-- injected by app.js -->
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span>Base URL: <code id="baseUrlLabel"></code></span>
+    <span class="dot-sep">&bull;</span>
+    <span>Hexagonal Architecture &middot; Spring Boot &middot; H2</span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
