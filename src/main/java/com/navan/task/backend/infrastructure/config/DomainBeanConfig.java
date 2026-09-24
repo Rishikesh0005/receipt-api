@@ -2,8 +2,10 @@ package com.navan.task.backend.infrastructure.config;
 
 import com.navan.task.backend.domain.port.FileStorage;
 import com.navan.task.backend.domain.port.OcrService;
+import com.navan.task.backend.domain.port.ProcessingLogRepository;
 import com.navan.task.backend.domain.port.ReceiptRepository;
 import com.navan.task.backend.domain.port.TransactionRepository;
+import com.navan.task.backend.domain.service.AuditLogService;
 import com.navan.task.backend.domain.service.ItemPatchService;
 import com.navan.task.backend.domain.service.ItemizeService;
 import com.navan.task.backend.domain.service.ReceiptIngestionService;
@@ -27,6 +29,11 @@ public class DomainBeanConfig {
     }
 
     @Bean
+    public AuditLogService auditLogService(ProcessingLogRepository processingLogRepository) {
+        return new AuditLogService(processingLogRepository);
+    }
+
+    @Bean
     public ReceiptProcessingService receiptProcessingService(
             TransactionRepository transactionRepository,
             OcrService ocrService) {
@@ -36,31 +43,35 @@ public class DomainBeanConfig {
     @Bean
     public ReceiptUploadService receiptUploadService(
             FileStorage fileStorage,
-            ReceiptRepository receiptRepository) {
-        return new ReceiptUploadService(fileStorage, receiptRepository);
+            ReceiptRepository receiptRepository,
+            AuditLogService auditLogService) {
+        return new ReceiptUploadService(fileStorage, receiptRepository, auditLogService);
     }
 
     @Bean
     public ReceiptIngestionService receiptIngestionService(
             ReceiptRepository receiptRepository,
             OcrService ocrService,
-            ReceiptProcessingService receiptProcessingService) {
-        return new ReceiptIngestionService(receiptRepository, ocrService, receiptProcessingService);
+            ReceiptProcessingService receiptProcessingService,
+            AuditLogService auditLogService) {
+        return new ReceiptIngestionService(receiptRepository, ocrService, receiptProcessingService, auditLogService);
     }
 
     @Bean
     public ItemizeService itemizeService(
             TransactionRepository transactionRepository,
             ReceiptRepository receiptRepository,
-            ReceiptProcessingService receiptProcessingService) {
-        return new ItemizeService(transactionRepository, receiptRepository, receiptProcessingService);
+            ReceiptProcessingService receiptProcessingService,
+            AuditLogService auditLogService) {
+        return new ItemizeService(transactionRepository, receiptRepository, receiptProcessingService, auditLogService);
     }
 
     @Bean
     public ItemPatchService itemPatchService(
             TransactionRepository transactionRepository,
-            ReconciliationPolicy reconciliationPolicy) {
-        return new ItemPatchService(transactionRepository, reconciliationPolicy);
+            ReconciliationPolicy reconciliationPolicy,
+            AuditLogService auditLogService) {
+        return new ItemPatchService(transactionRepository, reconciliationPolicy, auditLogService);
     }
 }
 

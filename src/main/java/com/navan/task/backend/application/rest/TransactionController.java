@@ -35,6 +35,16 @@ public class TransactionController {
     }
 
     /**
+     * GET /transactions - List all transactions (most recent first).
+     */
+    @GetMapping
+    public List<TransactionDto> getAll() {
+        return transactionRepository.findAll().stream()
+                .map(TransactionDto::from)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * GET /transactions/{id} - Get transaction with taxes and items.
      */
     @GetMapping("/{id}")

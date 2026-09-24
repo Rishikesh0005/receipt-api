@@ -19,11 +19,14 @@ public class ItemPatchService {
 
     private final TransactionRepository transactionRepository;
     private final ReconciliationPolicy reconciliationPolicy;
+    private final AuditLogService auditLogService;
 
     public ItemPatchService(TransactionRepository transactionRepository,
-                             ReconciliationPolicy reconciliationPolicy) {
+                             ReconciliationPolicy reconciliationPolicy,
+                             AuditLogService auditLogService) {
         this.transactionRepository = transactionRepository;
         this.reconciliationPolicy = reconciliationPolicy;
+        this.auditLogService = auditLogService;
     }
 
     public Transaction patchItems(String transactionId, List<LineItem> newItems) {
@@ -34,12 +37,17 @@ public class ItemPatchService {
                 reconciliationPolicy.check(transaction.getTotal(), newItems, transaction.getTaxes());
 
         if (!result.isReconciled()) {
+            auditLogService.warn("TRANSACTION", transactionId, "PATCH_ITEMS",
+                    "Rejected: items do not reconcile with total (delta " + result.getDelta() + ")");
             throw new ReconciliationException(result);
         }
 
         transaction.setItems(newItems);
         transaction.setItemizeStatus(Transaction.ItemizeStatus.COMPLETE);
 
-        return transactionRepository.save(transaction);
+        Transaction saved = transactionRepository.save(transaction);
+        auditLogService.info("TRANSACTION", transactionId, "PATCH_ITEMS",
+                "Updated " + newItems.size() + " item(s) via manual patch");
+        return saved;
     }
 }

@@ -18,13 +18,16 @@ public class ReceiptIngestionService {
     private final ReceiptRepository receiptRepository;
     private final OcrService ocrService;
     private final ReceiptProcessingService receiptProcessingService;
+    private final AuditLogService auditLogService;
 
     public ReceiptIngestionService(ReceiptRepository receiptRepository,
                                     OcrService ocrService,
-                                    ReceiptProcessingService receiptProcessingService) {
+                                    ReceiptProcessingService receiptProcessingService,
+                                    AuditLogService auditLogService) {
         this.receiptRepository = receiptRepository;
         this.ocrService = ocrService;
         this.receiptProcessingService = receiptProcessingService;
+        this.auditLogService = auditLogService;
     }
 
     public Transaction process(String receiptId) {
@@ -33,12 +36,16 @@ public class ReceiptIngestionService {
 
         String ocrText = ocrService.extractText(receipt.getFilePath());
         if (ocrText == null || ocrText.isBlank()) {
+            auditLogService.error("RECEIPT", receiptId, "PROCESS", "OCR extraction returned no text");
             throw new OcrExtractionException("Failed to extract text from receipt " + receiptId);
         }
 
         receipt.setRawOcrText(ocrText);
         receiptRepository.save(receipt);
 
-        return receiptProcessingService.processReceipt(receiptId, receipt.getFilePath());
+        Transaction transaction = receiptProcessingService.processReceipt(receiptId, receipt.getFilePath());
+        auditLogService.info("TRANSACTION", transaction.getId(), "PROCESS",
+                "Processed receipt " + receiptId + " -> status " + transaction.getItemizeStatus());
+        return transaction;
     }
 }

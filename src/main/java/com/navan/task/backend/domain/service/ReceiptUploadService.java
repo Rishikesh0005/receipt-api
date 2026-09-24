@@ -15,10 +15,13 @@ public class ReceiptUploadService {
 
     private final FileStorage fileStorage;
     private final ReceiptRepository receiptRepository;
+    private final AuditLogService auditLogService;
 
-    public ReceiptUploadService(FileStorage fileStorage, ReceiptRepository receiptRepository) {
+    public ReceiptUploadService(FileStorage fileStorage, ReceiptRepository receiptRepository,
+                                 AuditLogService auditLogService) {
         this.fileStorage = fileStorage;
         this.receiptRepository = receiptRepository;
+        this.auditLogService = auditLogService;
     }
 
     public Receipt upload(MultipartFile file) {
@@ -30,6 +33,9 @@ public class ReceiptUploadService {
         String storedPath = fileStorage.store(file, receipt.getId());
         receipt.setFilePath(storedPath);
 
-        return receiptRepository.save(receipt);
+        Receipt saved = receiptRepository.save(receipt);
+        auditLogService.info("RECEIPT", saved.getId(), "UPLOAD",
+                "Uploaded file \"" + file.getOriginalFilename() + "\"");
+        return saved;
     }
 }

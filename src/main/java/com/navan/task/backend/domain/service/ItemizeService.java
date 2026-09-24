@@ -19,13 +19,16 @@ public class ItemizeService {
     private final TransactionRepository transactionRepository;
     private final ReceiptRepository receiptRepository;
     private final ReceiptProcessingService receiptProcessingService;
+    private final AuditLogService auditLogService;
 
     public ItemizeService(TransactionRepository transactionRepository,
                            ReceiptRepository receiptRepository,
-                           ReceiptProcessingService receiptProcessingService) {
+                           ReceiptProcessingService receiptProcessingService,
+                           AuditLogService auditLogService) {
         this.transactionRepository = transactionRepository;
         this.receiptRepository = receiptRepository;
         this.receiptProcessingService = receiptProcessingService;
+        this.auditLogService = auditLogService;
     }
 
     public Transaction reItemize(String transactionId) {
@@ -37,10 +40,13 @@ public class ItemizeService {
 
         String ocrText = receipt.getRawOcrText();
         if (ocrText == null || ocrText.isBlank()) {
+            auditLogService.error("TRANSACTION", transactionId, "ITEMIZE", "No stored OCR text available");
             throw new OcrExtractionException("No stored OCR text for transaction " + transactionId);
         }
 
         receiptProcessingService.reItemize(transaction, ocrText);
+        auditLogService.info("TRANSACTION", transactionId, "ITEMIZE",
+                "Re-itemized -> status " + transaction.getItemizeStatus());
         return transaction;
     }
 }

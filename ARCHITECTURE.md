@@ -222,11 +222,82 @@ CREATE TABLE line_items (
 1. Extend `ReceiptProcessingService.parseReceiptText()` or `ItemizationService`.
 2. No REST controller changes needed (domain logic is independent).
 
-### Add Audit Logging
+### Audit Logging (implemented)
 
-1. Create audit entity and adapter.
-2. Inject into domain services via constructor.
-3. Call audit method after each operation.
+Every receipt upload, OCR process, re-itemize and item-patch call writes an entry
+to the audit trail:
+
+- Domain model: `ProcessingLog` (framework-free)
+- Port: `ProcessingLogRepository` (`save`, `findRecent`, `findByEntityId`)
+- Service: `AuditLogService` — the only place that writes logs; injected into
+  `ReceiptUploadService`, `ReceiptIngestionService`, `ItemizeService`, `ItemPatchService`
+- Adapter: `ProcessingLogRepositoryAdapter` (JPA-backed, table `processing_logs`)
+- REST: `GET /logs?limit=100` (recent, all entities) and `GET /logs/{entityId}` (history for one receipt/transaction)
+- UI: the "Activity log" panel on the test console polls this after every workflow run and PATCH
+
+---
+
+## Database Model (High Level)
+
+The app uses a single relational schema (H2 in-memory locally; swap the datasource
+for Postgres/MySQL in any other environment with **zero domain code changes**,
+since persistence is entirely behind the `ReceiptRepository` / `TransactionRepository`
+/ `ProcessingLogRepository` ports).
+
+```
+┌───────────────────────┐        ┌────────────────────────────┐
+│       receipts        │        │       transactions          │
+├───────────────────────┤        ├────────────────────────────┤
+│ id            (PK)     │◄───┐   │ id              (PK)        │
+│ original_filename      │    │   │ receipt_id      (FK, 1:1)   │───┘
+│ file_path              │    └───┤ merchant                    │
+│ raw_ocr_text  (TEXT)    │        │ date                        │
+└───────────────────────┘        │ currency                    │
+                                  │ total                        │
+                                  │ itemize_status               │
+                                  │   (COMPLETE|NEEDS_REVIEW|    │
+                                  │    FAILED)                   │
+                                  └───────────┬────────────┬────┘
+                                              │            │
+                              ┌───────────────▼─┐   ┌──────▼───────────┐
+                              │    tax_lines     │   │    line_items     │
+                              ├──────────────────┤   ├───────────────────┤
+                              │ id        (PK)    │   │ id         (PK)    │
+                              │ transaction_id(FK)│   │ transaction_id(FK) │
+                              │ name              │   │ description        │
+                              │ rate              │   │ amount             │
+                              │ amount            │   │ quantity           │
+                              │ jurisdiction      │   │ tax_amount         │
+                              └──────────────────┘   └───────────────────┘
+
+┌────────────────────────────────────────┐
+│            processing_logs               │
+├────────────────────────────────────────┤
+│ id            (PK)                       │
+│ entity_type    ("RECEIPT" | "TRANSACTION")│
+│ entity_id      (references receipts.id    │
+│                 or transactions.id,        │
+│                 no FK constraint — logs    │
+│                 must never block on a      │
+│                 missing/deleted parent)    │
+│ action         (UPLOAD, PROCESS, ITEMIZE,  │
+│                 PATCH_ITEMS)               │
+│ level          (INFO | WARN | ERROR)       │
+│ message        (TEXT)                      │
+│ timestamp                                  │
+└────────────────────────────────────────┘
+```
+
+**Relationships**
+- `receipts 1 ── 1 transactions` (one transaction per processed receipt; enforced by `ReceiptIngestionService` calling OCR/extraction exactly once)
+- `transactions 1 ── N tax_lines`, `transactions 1 ── N line_items` (cascade save/delete, `orphanRemoval = true` — replacing items via PATCH deletes the old rows)
+- `processing_logs` references `receipts.id` or `transactions.id` by convention only (no FK) — audit history must survive even if you later add hard-deletes for receipts/transactions
+
+**Key modeling decisions**
+- IDs are UUID strings generated in the domain layer (`Transaction`, `Receipt`, `ProcessingLog`), not DB-generated — so an id is known immediately after `new Transaction(...)`, before any save call, and it's preserved exactly across every persistence round-trip via each model's `restore(...)` factory
+- Money fields (`total`, `amount`, `rate`) are `BigDecimal`/`DECIMAL` end-to-end — never `float`/`double` — to avoid cent-rounding bugs
+- `itemize_status` is a real enum column (`@Enumerated(STRING)`), not a free-text status, so invalid states are impossible at the DB level
+- `raw_ocr_text` is stored on the receipt (not re-derived) so `POST /transactions/{id}/itemize` can re-run extraction without re-reading the original file or calling OCR again
 
 ---
 

@@ -501,4 +501,83 @@
       patchBtn.disabled = false;
     }
   });
+
+  // ---------------------------------------------------------------------
+  // All transactions + activity log panels
+  // ---------------------------------------------------------------------
+  const txTableBodyEl = document.getElementById("txTableBody");
+  const logListEl = document.getElementById("logList");
+  const refreshTxBtn = document.getElementById("refreshTxBtn");
+  const refreshLogBtn = document.getElementById("refreshLogBtn");
+
+  function escapeHtml(str) {
+    return String(str == null ? "" : str).replace(/[&<>"']/g, (c) => (
+      { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
+    ));
+  }
+
+  function statusPillClass(status) {
+    if (status === "COMPLETE") return "status-pill complete";
+    if (status === "NEEDS_REVIEW") return "status-pill review";
+    return "status-pill failed";
+  }
+
+  async function loadTransactions() {
+    txTableBodyEl.innerHTML = '<tr><td colspan="6" class="empty-state">Loading&hellip;</td></tr>';
+    try {
+      const res = await fetch(BASE_URL + "/transactions");
+      const list = await res.json();
+      if (!list.length) {
+        txTableBodyEl.innerHTML = '<tr><td colspan="6" class="empty-state">No transactions yet &mdash; run the workflow above.</td></tr>';
+        return;
+      }
+      txTableBodyEl.innerHTML = list.map((tx) => (
+        "<tr>" +
+        "<td>" + escapeHtml(tx.merchant || "&mdash;") + "</td>" +
+        "<td>" + escapeHtml(tx.date || "&mdash;") + "</td>" +
+        "<td>" + escapeHtml(tx.total != null ? tx.total + " " + (tx.currency || "") : "&mdash;") + "</td>" +
+        "<td><span class=\"" + statusPillClass(tx.itemizeStatus) + "\">" + escapeHtml(tx.itemizeStatus) + "</span></td>" +
+        "<td>" + (tx.items ? tx.items.length : 0) + "</td>" +
+        "<td class=\"mono-cell\" title=\"" + escapeHtml(tx.id) + "\">" + escapeHtml(tx.id.slice(0, 8)) + "&hellip;</td>" +
+        "</tr>"
+      )).join("");
+    } catch (err) {
+      txTableBodyEl.innerHTML = '<tr><td colspan="6" class="empty-state">Failed to load transactions.</td></tr>';
+    }
+  }
+
+  async function loadLogs() {
+    logListEl.innerHTML = '<div class="empty-state">Loading&hellip;</div>';
+    try {
+      const res = await fetch(BASE_URL + "/logs?limit=50");
+      const list = await res.json();
+      if (!list.length) {
+        logListEl.innerHTML = '<div class="empty-state">No activity yet.</div>';
+        return;
+      }
+      logListEl.innerHTML = list.map((log) => (
+        '<div class="log-row log-' + log.level.toLowerCase() + '">' +
+        '<span class="log-level">' + escapeHtml(log.level) + "</span>" +
+        '<span class="log-action">' + escapeHtml(log.action) + "</span>" +
+        '<span class="log-msg">' + escapeHtml(log.message) + "</span>" +
+        '<span class="log-time">' + new Date(log.timestamp).toLocaleTimeString() + "</span>" +
+        "</div>"
+      )).join("");
+    } catch (err) {
+      logListEl.innerHTML = '<div class="empty-state">Failed to load activity log.</div>';
+    }
+  }
+
+  function refreshActivity() {
+    loadTransactions();
+    loadLogs();
+  }
+
+  refreshTxBtn.addEventListener("click", loadTransactions);
+  refreshLogBtn.addEventListener("click", loadLogs);
+
+  // Initial load + refresh after every workflow run and every PATCH
+  refreshActivity();
+  runBtn.addEventListener("click", () => setTimeout(refreshActivity, 800));
+  patchBtn.addEventListener("click", () => setTimeout(refreshActivity, 500));
 })();

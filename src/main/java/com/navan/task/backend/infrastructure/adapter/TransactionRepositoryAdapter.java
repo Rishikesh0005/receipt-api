@@ -76,6 +76,15 @@ public class TransactionRepositoryAdapter implements TransactionRepository {
         return jpaRepository.findByReceiptId(receiptId).map(this::mapToTransaction);
     }
 
+    @Override
+    public List<Transaction> findAll() {
+        return jpaRepository.findAll(org.springframework.data.domain.Sort.by(
+                        org.springframework.data.domain.Sort.Direction.DESC, "date"))
+                .stream()
+                .map(this::mapToTransaction)
+                .collect(Collectors.toList());
+    }
+
     private Transaction mapToTransaction(TransactionEntity entity) {
         Transaction transaction = Transaction.restore(entity.getId(), entity.getReceiptId());
         transaction.setMerchant(entity.getMerchant());

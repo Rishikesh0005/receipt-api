@@ -115,6 +115,37 @@
     </div>
   </section>
 
+  <section class="activity-grid">
+    <div class="panel activity-panel">
+      <div class="activity-head">
+        <h2 style="margin:0;">All transactions</h2>
+        <button class="ghost-btn small" id="refreshTxBtn" type="button">Refresh</button>
+      </div>
+      <p class="hint" style="margin:2px 0 10px;">GET /transactions &mdash; every transaction ever processed, most recent first.</p>
+      <div class="tx-table-wrap">
+        <table class="tx-table" id="txTable">
+          <thead>
+            <tr><th>Merchant</th><th>Date</th><th>Total</th><th>Status</th><th>Items</th><th>Id</th></tr>
+          </thead>
+          <tbody id="txTableBody">
+            <tr><td colspan="6" class="empty-state">No transactions yet &mdash; run the workflow above.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel activity-panel">
+      <div class="activity-head">
+        <h2 style="margin:0;">Activity log</h2>
+        <button class="ghost-btn small" id="refreshLogBtn" type="button">Refresh</button>
+      </div>
+      <p class="hint" style="margin:2px 0 10px;">GET /logs &mdash; audit trail of every upload, process, itemize and patch call.</p>
+      <div class="log-list" id="logList">
+        <div class="empty-state">No activity yet.</div>
+      </div>
+    </div>
+  </section>
+
   <footer class="foot">
     <span>Base URL: <code id="baseUrlLabel"></code></span>
     <span class="dot-sep">&bull;</span>

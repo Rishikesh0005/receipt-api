@@ -133,5 +133,10 @@ public class ReceiptProcessingIntegrationTest {
                     .filter(t -> receiptId.equals(t.getReceiptId()))
                     .findFirst();
         }
+
+        @Override
+        public List<Transaction> findAll() {
+            return new ArrayList<>(store.values());
+        }
     }
 }
